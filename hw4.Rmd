@@ -1,0 +1,88 @@
+---
+title: "hw4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+OUTP16 <- read.csv("VTOUTP16.TXT")
+chronic_RA <- read_excel("RA_ICD10_Codes.xlsx",sheet =1)
+otherRA_systemic_involvement <-read_excel("RA_ICD10_Codes.xlsx",sheet =2)
+revcode<-read.csv("REVCODE.csv")
+rev<-read.csv("VTREVCODE16.TXT")
+#select one cohort for the first tab in the Excel file (chronic RA)
+pt_chronic_RA<- OUTP16%>% filter(OUTP16[,10] %in% chronic_RA$`ICD-10 Codes`)
+pt_chronic_RA<- cbind(pt_chronic_RA, pt_chronic_RA[,10])
+colnames(pt_chronic_RA)[71] <- "ICD-10 codes"
+for (i in c(11:29)) {
+  pt<- OUTP16%>% filter(OUTP16[,i] %in% chronic_RA$`ICD-10 Codes`)
+  pt<- cbind(pt, pt[,i])
+  colnames(pt)[71] <- "ICD-10 codes"
+  pt_chronic_RA<- rbind(pt_chronic_RA, pt)
+}
+
+#select unique patient in case of duplicate patients in table'pt_chronic_RA'
+pt_chronic_RA<-pt_chronic_RA[!duplicated(pt_chronic_RA$Uniq), ]
+
+
+
+#select second cohort based on the Excel file tab “other RA with systemic involvement”
+pt_other_RA<- OUTP16%>% filter(OUTP16[,10] %in% otherRA_systemic_involvement$`ICD-10 Codes`)
+pt_other_RA<- cbind(pt_other_RA, pt_other_RA[,10])
+colnames(pt_other_RA)[71] <- "ICD-10 codes"
+for (i in c(11:29)) {
+  pt<- OUTP16%>% filter(OUTP16[,i] %in% otherRA_systemic_involvement$`ICD-10 Codes`)
+  pt<- cbind(pt, pt[,i])
+  colnames(pt)[71] <- "ICD-10 codes"
+  pt_other_RA<- rbind(pt_other_RA, pt)
+}
+
+#select unique patient in case of duplicate patients in table'pt_other_RA'
+pt_other_RA<-pt_other_RA[!duplicated(pt_chronic_RA$Uniq), ]
+
+
+```
+
+
+(2)
+```{r cars}
+fre_chronic_RA<-count(pt_chronic_RA, `ICD-10 codes`)
+fre_chronic_RA[order(fre_chronic_RA$n,decreasing = TRUE),]
+
+fre_other_RA<-count(pt_other_RA, `ICD-10 codes`)
+fre_other_RA[order(fre_other_RA$n,decreasing = TRUE),]
+
+```
+
+```{r}
+dup<-rbind(OUTP16,pt_chronic_RA[1:70],pt_other_RA[1:70])
+dup<-dup[!duplicated(dup,fromLast = FALSE) & !duplicated(dup,fromLast = TRUE),]
+nonRA_male<-dup %>% filter(sex==1)%>%tally()
+nonRA_female<-dup %>% filter(sex==2)%>%tally()
+RA_male<-pt_chronic_RA %>% filter(sex==1)%>% tally()+pt_other_RA %>% filter(sex==1)%>%tally()
+RA_female<-pt_chronic_RA %>% filter(sex==2)%>% tally()+pt_other_RA %>% filter(sex==2)%>%tally()
+Test <-
+  matrix(c(nonRA_female$n,RA_female$n,nonRA_male$n, RA_male$n),
+         nrow = 2,
+         dimnames = list(c("NON RA", "RA"),
+                         c("Female", "Male")))
+fisher.test(Test)
+
+# the p-value is so small that the result is statistically significant and we can reject the null hypothesis and claim that there exists a  relationship of RA with gender.
+```
+
+```{r}
+quantile(OUTP16$CHRGS,probs = c(0,0.25,0.5,0.75,1),na.rm = TRUE)
+#IQR= Q3-Q1=3440.18-682.48=2757.7
+```
+
+```{r}
+total_RA<-rbind(pt_chronic_RA[1:70],pt_other_RA[1:70])
+colnames(revcode)<-c("REVCODE","REVCODE_DESC")
+rev<-merge(rev,revcode,by="REVCODE")
+rev<-rev%>%select(REVCODE,Uniq,REVCHRGS,REVCODE_DESC)
+RA_rev<-merge(total_RA,rev,by="Uniq")
+fre_rev_RA<-count(RA_rev,REVCODE_DESC)
+```

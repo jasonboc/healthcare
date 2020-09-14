@@ -1,0 +1,58 @@
+---
+title: "hw3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(flexclust)
+library(cluster)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(ggpubr)
+library(hrbrthemes)
+theme_set(theme_pubr())
+df=read.csv("500 company.csv")
+```
+
+```{r}
+set.seed(3)
+kmedian=kcca(df$Value.Retention,k=3,family=kccaFamily("kmedians") ,control=list(initcent="kmeanspp"))
+kmedian
+```
+```{r}
+set.seed(3)
+kmean=kcca(df$Value.Retention,k=3, control=list(initcent="kmeanspp"))
+kmean
+```
+```{r}
+clust=clusters(kmedian)
+df=df%>%mutate(clust=clust)
+#ggplot(df, aes(x=clust, y=Value.Retention)) + geom_point()+theme_ipsum()
+df=df%>%mutate(clust=case_when((clust==1)~"HVR",(clust==2)~"MVR",(clust==3)~"LVR"))
+```
+
+```{r}
+df%>%group_by(GICS.Sector,clust)%>%summarise(n=n())%>%
+  spread(clust, n)%>%
+  kable()
+```
+
+```{r}
+df2=df%>%mutate(GICS.Sector=ifelse(Company=="ANTM"|Company=="CNC"|Company=="CI"|Company=="HUM"|Company=="UNH","Health Insurance",as.character(df$GICS.Sector)))
+df2=df2%>%mutate(GICS.Sector=ifelse(GICS.Sector=="Health Care","Healthcare Only",as.character(GICS.Sector)))
+df2=df2%>%mutate(quantile=ntile(Value.Retention,5))
+```
+
+```{r}
+df3=df2%>%filter(GICS.Sector=="Health Insurance"|GICS.Sector=="Healthcare Only")
+t<-table(df3$GICS.Sector,df3$quantile)
+ftable(t)
+prop.table(t,1)
+df3%>%ggplot(aes(x=quantile))+ geom_histogram(aes(color = GICS.Sector, fill = GICS.Sector),
+                         alpha = 0.4, position = "identity") +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800")) +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"))  +theme_pubclean()
+
+```

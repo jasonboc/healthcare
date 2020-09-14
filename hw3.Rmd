@@ -1,0 +1,34 @@
+---
+title: "hw3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+VTED16 <- read.csv("VTED16.TXT")
+INP16<-read.csv("VTINP16_upd.TXT")
+revcode<-read.csv("REVCODE.csv")
+rev<-read.csv("VTREVCODE16.TXT")
+```
+
+```{r}
+colnames(revcode)<-c("REVCODE","REVCODE_DESC")
+INP<-INP16%>%select(UNIQ,hnum2,ATYPE,asour,intage,sex,dstat,CHRGS,pdays,ccsdxgrp)
+ED<-VTED16%>%select(UNIQ,hnum2,ATYPE,asour,intage,sex,dstat,CHRGS,pdays,ccsdxgrp)
+rev<-merge(rev,revcode,by="REVCODE")
+colnames(rev)[6]<-"UNIQ"
+rev<-rev%>%select(REVCODE,UNIQ,REVCHRGS,REVCODE_DESC)
+totalinp<-merge(INP,rev,by="UNIQ")
+totaled<-merge(ED,rev,by="UNIQ")
+```
+
+```{r}
+First<-totalinp%>%filter(UNIQ==507033)
+Second<-totalinp%>%filter(UNIQ==40436)
+Third<-totalinp%>%filter(UNIQ==1585831)
+Third<-totaled%>%filter(UNIQ==1585831)
+Fourth<-totalinp%>%filter(UNIQ==200760)
+Fourth<-totaled%>%filter(UNIQ==200760)
+
+```

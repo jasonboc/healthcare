@@ -1,0 +1,19 @@
+
+
+library(tidyverse)
+npidata_pfile_20050523.20191013<-read.csv('npidata_pfile_20050523-20191013.csv')
+npi=npidata_pfile_20050523.20191013
+npi_filter<-npi%>%filter(npi$Entity.Type.Code==1 & npi$Provider.Business.Practice.Location.Address.State.Name %in% c("FL","GA","AZ","CO","CT","MS","HL","RI")& npi$Provider.Gender.Code %in% c("M","F"))
+low_M<-npi_filter%>%filter((npi_filter$Healthcare.Provider.Taxonomy.Code_1 %in% c('207V00000X','208000000X')) & (npi_filter$Provider.Gender.Code== "M") )%>% tally()
+low_F<-npi_filter%>%filter((npi_filter$Healthcare.Provider.Taxonomy.Code_1 %in% c('207V00000X','208000000X')) & (npi_filter$Provider.Gender.Code== "F") )%>% tally()
+high_M<-npi_filter%>%filter((npi_filter$Healthcare.Provider.Taxonomy.Code_1 %in% c('208600000X','207X00000X')) & (npi_filter$Provider.Gender.Code== "M") )%>% tally()
+high_F<-npi_filter%>%filter((npi_filter$Healthcare.Provider.Taxonomy.Code_1 %in% c('208600000X','207X00000X')) & (npi_filter$Provider.Gender.Code== "F") )%>% tally()
+Test <-
+  matrix(c(low_F$n,high_F$n,low_M$n, high_M$n),
+         nrow = 2,
+         dimnames = list(c("low risk-award", "high risk-reward"),
+                         c("Female", "Male")))
+fisher.test(Test)
+
+
+#male doctors are more likely than their female peers to choose the practices that are associated with higher risk for a higher reward. 
